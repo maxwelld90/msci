@@ -1,0 +1,52 @@
+\documentclass{mpaper}
+\usepackage{url}
+\usepackage{color}
+\usepackage{graphics,graphicx}
+\usepackage{epsfig}
+\usepackage{epstopdf}
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{ifthen}  
+\usepackage{rotating}
+\usepackage{tabularx}
+\usepackage{subcaption}
+\usepackage{varwidth}
+\usepackage[labelfont=bf]{caption}
+\usepackage[numbers]{natbib}
+
+% This guff allows for tables with line breaks! Use L, C or R as the column type.
+\usepackage{array}
+\usepackage{ragged2e}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{W}[1]{>{\centering\arraybackslash}m{#1}}
+
+\pagenumbering{arabic}
+
+\begin{document}
+\newcommand{\todo}[1]{\textcolor{red}{#1}}
+
+\title{Improving Site Search with Clickthrough Data:\\A Simulated Analysis}
+\author{David Maxwell}
+\matricnum{0800660}
+\maketitle
+
+\begin{abstract}
+Today, all major organisations have a presence on the World Wide Web. These websites typically host thousands of pages of content, and often provide a form of search functionality. This functionality acts as a fast and direct way for customers to find the information they are looking for to satisfy their information need. In this paper, we examine the problem of site search, focusing specifically on how organisations can incorporate usage data - as web search engines currently do - in order to improve retrieval quality. To this end, we propose three different ways to incorporate clickthrough data with a standard retrieval function. We then conduct a simulation generating clickthrough data to examine how the quantity and quality of the data affects retrieval performance. Our results show that with a large volume of low-noise clickthrough data, potential performance improvements are large. However, more realistic settings shows a modest improvement in performance. An increase of P@10 from 0.2 to 0.4 requires almost 2000 iterations where there is a high probability of clicking on a relevant item (0.64), and a low probability of clicking on irrelevant items (0.39).
+\end{abstract}
+
+\input{introduction}
+\input{background}
+\input{method}
+\input{results}
+\input{conclusion}
+
+{\bf Acknowledgements.} First, I would like to thank Colin Wilkie (\href{http://www.twitter.com/kojayboy}{\emph{@kojayboy}}) for his friendship and comments on my work throughout this project. I would like to thank Dr. Gethin Norman for his understanding during what has been a very challenging year. However, I would like to extend my deepest gratitude to my supervisor, Dr. Leif Azzopardi (\href{http://www.twitter.com/leifos}{\emph{@leifos}}). Without his friendship, support and guidance, I certainly would not have crossed the finish line I was beginning to think I'd never reach. Thank you.
+
+\bibliographystyle{abbrvnat}
+\small{\bibliography{sigproc,cikm2013site_clicks}}
+\balancecolumns
+
+\end{document}

@@ -1,0 +1,155 @@
+%!TEX root = sigir2013site_clicks.tex
+\section{Experimental Method}\label{sec_method}
+Studies suggest that in recent years, there has been a shift towards using machine learning techniques and clickthrough data to improve search engine performance. While the benefits of such approaches are evident, the technique leaves a knowledge gap in understanding exactly how the behaviour of clickthrough data changes by varying associated aspects.
+
+This section outlines a series of devised models that incorporate clickthrough data and associated evidence into document scorings and rankings. We also provide the key research questions we wish to address, our baseline setup details, and information on our clickthrough simulator. The section is concluded with a high-level description of our devised simulations.
+
+\subsection{Research Questions and Hypotheses}\label{sec:method:questions}
+The main objective of this study was to investigate \emph{by how much clickthrough data can improve the performance of site search} and \emph{how clickthrough data could be incorporated}. Specifically, we examined how much data was required, and what conditions were required to achieve performance increases. These issues can be represented by the following research questions: 
+
+\begin{enumerate}
+	
+	\item{\emph{Of what quality does clickthrough data need to possess to yield good results?} A single click can only be considered as a weak indicator of relevance \cite{kelly2005implicit_feedback}. As such, clickthrough data, like other forms of implicit feedback, is considered noisy. As such, a quality threshold must be determined - if this level is reached or exceeded, retrieval performance will begin to fall.}
+	
+	\item{\emph{What trade-offs are there regarding quality of data and quantity?} Taking into account both the quantity and quality of clickthrough data, are there any links between the two which could be exploited to reach the highest performance level attainable?}
+
+\end{enumerate}
+
+To study this problem, we modelled a series of clickthrough simulations. Simulations allow researchers to conduct carefully designed and controlled experiments. From these, precise answers to research questions can be obtained \cite{azzopardi2011economics_of_iir, white05sim}. Our simulations therefore provided us with the necessary control to obtain an understanding of the influence clickthrough data had on performance.
+
+\subsection{Data and Materials}\label{sec:method:materials}
+For this study, we used the TREC \emph{DOTGOV1} collection. The collection comprises of 1,247,753 documents, and was used in conjunction with TREC topic 551-600 and their associated explicit relevance judgements. The DOTGOV1 collection is a compilation of crawled documents across the US Government's TLD, \texttt{.gov}.
+
+The collection was indexed with the \emph{Indri}\footnote{\url{http://www.lemurproject.org/indri.php}} toolkit, which is part of the \emph{Lemur}\footnote{\url{http://www.lemurproject.org/}} project. It was preprocessed in four ways to create four individual inverted indexes. The combinations used were: indexing with stopwords removed\footnote{We used Fox's classical stopword list \cite{fox1992lexical_analysis}, containing a total of 733 stopwords.}, indexing with Porter stemming applied, indexing with both stopword removal and Porter stemming applied, and without any preprocessing whatsoever.
+
+We then ran the TF-IDF, PL2 and BM25 retrieval models over each created index, varying the $\beta$ and $c$ values for the BM25 and PL2 models respectively. For $\beta$, variations in steps of 0.1 were evaluated between 0.0 and 1.0. For $c$, variations in steps of 1.0 between 1.0 and 10.0 were evaluated. For the DOTGOV1 index, the BM25 retrieval model with Porter stemming offered the highest performance values, and was thus selected to act as the baseline system for our work. Performance values across all four indexes created with the BM25 retrieval model are summarised in Table \ref{tbl:baselines}.
+
+\begin{table}[h]
+	\renewcommand{\arraystretch}{1.3}
+	\begin{center}
+		\begin{small}
+			\begin{tabularx}{\linewidth}{X|c|c|c|c}
+				\textbf{\emph{Variant}} & \textbf{\emph{$\beta$}} & \textbf{\emph{MAP}} & \textbf{\emph{P@5}} & \textbf{\emph{P@10}}
+				\tabularnewline
+				\hline
+				N/A & 0.6 & 0.1689 & 0.248 & 0.212 \tabularnewline \hline
+				\textbf{Porter} & \textbf{0.6} & \textbf{0.1842} & \textbf{0.272} & \textbf{0.226} \tabularnewline \hline
+				Stopword & 0.6 & 0.1674 & 0.248 & 0.212 \tabularnewline \hline
+				Stopword + Porter & 0.6 & 0.1786 & 0.264 & 0.216 \tabularnewline
+			\end{tabularx}
+		\end{small}
+	\end{center}
+	
+	\vspace{-0.4cm}
+	\caption{\textbf{Table illustrating the different performance values obtained using the BM25 model across the four preprocessed variants of the DOTGOV1 collection. The highest performance values (selected as our baseline) are highlighted in bold.}}
+	\label{tbl:baselines}
+\end{table}
+
+Although for the purposes of this work the baseline value is not altogether that important, it is nevertheless good practice to select a modest baseline from which to improve. Across IR research, BM25 has been widely used as a baseline for experimentation (see \cite{moon2010user_driven_ranking} and \cite{upstill2003queryindependent_evidence} for examples).
+
+\subsection{Combining Evidence}
+To incorporate clickthrough data evidence into the scoring of documents, we used a simple, aggregative technique based on the \emph{combSUM} approach defined by \citeauthor{shaw1993combining} \cite{shaw1993combining}. The technique can be represented by the function $S(q, d)$:
+
+\vspace{-0.3cm}
+\begin{equation}
+	S(q, d) = bs_q(d) + C_q(d)
+\end{equation}
+
+\noindent
+where $q$ is a given query/topic, and $d$ is a document ranked in that query's results; $bs_q(d)$ is the baseline score for the given query/document combination; and $C_q(d)$ is some function which incorporates clickthrough data evidence. Section \ref{sec:method:models} details the models that were devised that incorporate clickthrough data.
+
+\subsection{Clickthrough Models}\label{sec:method:models}
+Here, we describe the three models that were developed as part of this study which incorporate clickthrough data and other forms of related evidence. The models can be broadly split into two categories, with one \emph{promotion-only} model, and two \emph{promotion and demotion} models. The terms promotion and demotion relate to the promotion and demotion of documents in document rankings when clickthrough data are considered.
+
+To express the models in a simple form, we use the following nomenclature in their descriptions. Note that all mentions of a document, $d$, must be considered in relation to a user's query, $q$.
+
+\begin{itemize}
+	
+	\item[$R_d$]{The current rank of document $d$.}
+	
+	\item[$N_d$]{The number of times document $d$ has been displayed in the top-$k$ of a query's results, where $k$ is the depth of a given simulation (see Section \ref{method:simulator:clickthrough}).}
+	
+	\item[$E_d$]{The number of aggregated examinations that document $d$ has received from simulated users.}
+	
+	\item[$C_d$]{The number of aggregated clicks that document $d$ has attracted from simulated users.}
+	
+	\item[$\overline{C_d}$]{The number of times that document $d$ has \emph{not} been clicked when it was visible to a simulated user. Thus, $\overline{C_d} = N_d - C_d$.}
+	
+\end{itemize}
+
+\subsubsection{Promotion-Only Model}\label{sec:method:models:promo}
+Our simple promotion-only model uses a multiplicative approach to combine clickthrough evidence. Abbreviated as model \textbf{P} throughout this paper, the model can be defined thus:
+\vspace{-0.1cm}
+\begin{equation}
+	C_q(d) = \alpha C_d
+	\label{eqn:p}
+\end{equation}
+
+\noindent
+where $\alpha$ is a tuning parameter, used to adjust the weighting of clickthrough evidence in document scoring.
+
+Given this formulation, it is clear that if we have `perfect' clickthrough data - where users click only on relevant documents - this model will percolate relevant documents upwards at a rate of $\alpha$. However, as noise is introduced, as long as the proportion of relevant documents clicked is higher than the number of non-relevant documents clicked, then relevant documents should percolate up the rankings. A point existed where this was no longer the case - it is this point which we wished to find empirically.
+
+\subsubsection{Promotion and Demotion Models}
+We also devised two further models that demote documents as well as promote. Behind this concept is the belief that if irrelevant documents can be demoted, relevant documents will percolate to the top of the rankings faster than when compared to a promotion-only approach.
+
+We devised a simple promotion/demotion model that promotes documents based on the number of clicks a document receives. Additionally, the model demotes those documents that are clicked on infrequently. The model is abbreviated as \textbf{PD} in this paper.
+\vskip -0.3cm
+\begin{equation}
+	C_q(d) = \alpha C_d - \beta \overline{C_d}
+	\label{eqn:pd}
+\end{equation}
+
+The model, like \textbf{P} shown in Equation \ref{eqn:p}, uses tuning parameter $\alpha$ to influence the weighting of promoting documents. The promotion/demotion model also includes an additional tuning parameter, $\beta$, for influencing the weighting of demoting documents. While the issue of demoting documents may be addressed, model \textbf{PD} may not be particularly robust to noisy clickthrough data - or scenarios where relevant documents are not clicked. These are considered in our final model.
+
+Abbreviated as \textbf{PDE} in this paper, our final model also includes the tuning parameters as mentioned for model \textbf{PD}. For this model, we also include two key features of clickthrough data: the examination hypothesis \cite{craswell2008click_position_bias_models}, and positional bias.
+\vspace{-0.1cm}
+\begin{equation}
+	C_q(d) = \alpha C_d - \left[\frac{\beta(E_d - C_d)}{R_d}\right]
+	\label{eqn:pde}
+\end{equation}
+
+For this model, we assume that the number of clicks a document receives subtracted from the number of examinations it receives provides an indicator of how irrelevant a document is to a given query. This means that an infrequently clicked document is more likely to be demoted down the rankings. We also make this score proportional to the rank at which a document is currently at: this adds the concept of positional bias.
+
+\subsubsection{Clickthrough Modelling in Prior Works}
+Several studies have proposed different approaches to modelling clickthrough data which are not used in this paper. \citeauthor{dupret2008user_browsing_model} \cite{dupret2008user_browsing_model} extended the examination model with the \emph{User Browsing Model} where distances from previously clicked documents are factored into the probability of clicking the next. \citeauthor{craswell2008click_position_bias_models} \cite{craswell2008click_position_bias_models} also introduced the \emph{Mixture Model} - where users would blindly click on highly ranked documents (as if in a rush) - and the \emph{Cascade Model} - where users would scan results from top to bottom in a linear fashion. Several studies since have developed the idea of the Cascade Model to consider further aspects \cite{chapelle2009bayesian, guo2009click_chain, guo2009multiple_click_models}.
+
+\subsection{Clickthrough Simulator}\label{method:simulator:clickthrough}
+The devised clickthrough models were implemented as part of our clickthrough simulator\footnote{The clickthrough simulator implemented as part of this study was written in the \href{http://www.python.org/download/releases/2.7/}{\emph{Python}} programming language. The source code is available on request.}. The simulator was extensively used to run a series of simulations of a user's behaviour when interacting with search results. By taking in a set of ranked results (in the case of this study, the previously discussed baselines) and corresponding relevance judgements, the system would simulate user behaviour over a series of iterations. Each iteration of the simulation is analogous to a real-world user of a search engine examining (viewing) a series of ranked documents for several queries, potentially leading to the clicking of document(s) he or she feels is/are relevant to his or her information need.
+
+Simulated interactions could be controlled by a series of customisable parameters to suit individual cases. Parameters included:
+
+\begin{itemize}
+	
+	\item{a depth parameter, allowing for control of how far down the ranked results list a simulated user would be prepared to look for relevant results;}
+	
+	\item{a parameter allowing for determining the probability of examining a document, $P(E)$ - which could be proportional to the depth/rank of a given document in the results list, known as the examination model \cite{richardson2007predicting_clicks, craswell2008click_position_bias_models};}
+	
+	\item{parameters allowing for the adjustment of the probability of a user clicking a relevant document, $P(C|R)$, and the probability of clicking an irrelevant document, $P(C|N)$; and}
+	
+	\item{the customisation of $\alpha$ and $\beta$ parameters for the devised clickthrough models, as discussed in Section \ref{sec:method:models}.}
+	
+\end{itemize}
+
+Each iteration produced a series of files, including \texttt{.views} and \texttt{.clicks} files, containing the aggregated number of examinations and clicks that a topic/document pairing had received, respectively. Also included was a \texttt{.topk} file, containing the aggregated number of appearances a document had appeared - in relation to a given query - in the top-$k$ of the ranked results. $k$ denoted the depth of a given simulation. Of particular importance was the file containing a new set of results, which combined clickthrough evidence to produce new document scores. With each results file generated, the simulation's performance after each iteration could be evaluated with a tool such as \href{http://trec.nist.gov/trec_eval/}{\texttt{trec\_eval}}.
+
+By evaluating performance after each iteration, we could compare the MAP of iteration $i-1$ against the MAP of iteration $i$. This comparison was to ensure that the performance had not converged or fallen. If either case was reached, and no further improvement in MAP was noted after 200 iterations, the simulation was deemed complete and then stopped. For the purposes of our simulations, we ran to a maximum of 1000 iterations - or the last increase in MAP + 200 iterations, whichever came first.
+
+\subsection{Clickthrough Simulations}\label{method:simulations}
+With our three models devised, we developed a number of simulations to evaluate each model's performance across a range of different simulation parameters, which are enumerated in Section \ref{method:simulator:clickthrough}. Of particular interest was determining values for the $\alpha$ and $\beta$ parameters, controlling the weighting of document promotion and demotion respectively.
+
+Our approach included:
+
+\begin{itemize}
+	
+	\item{a series of simulations that examined the behaviour of clickthrough data in `perfect' conditions, free of bias and noise, (with $P(C|N) = 0.0$);}
+	
+	\item{simulations that examined the impact on performance when positional bias was included (when $P(E)$ was varied);}
+	
+	\item{simulations that examined performance when `noisy', imperfect data was introduced (with variations in both $P(C|R)$ and $P(C|N)$); and}
+	
+	\item{simulations that examined performance with probabilities obtained from a recent user study (see \cite{smucker2012time_based_calibration}, where we obtain realistic values for $P(C|R)$ and $P(C|N)$).}
+	
+\end{itemize}
+
+The setup for each simulation - as well as a discussion on the results obtained from each - can be found in Section \ref{sec_results}.
